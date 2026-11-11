@@ -52,6 +52,7 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
                 patch.dict(sys.modules, {'open_webui.models.config': module}),
                 patch.object(bridge, 'settings', AsyncMock(return_value=config)),
                 patch.object(bridge, 'ClaudeAdapter', FakeClaude),
+                patch.object(bridge, 'runtime_path', return_value=sys.executable),
             ):
                 response = await bridge.generate_chat(request, form, SimpleNamespace(id='owner', role='admin'), model)
                 chunks = [chunk async for chunk in response.body_iterator]
@@ -63,6 +64,22 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(HTTPException) as error:
                     await bridge.generate_chat(request, form, SimpleNamespace(id='owner', role='admin'), model)
                 self.assertEqual(error.exception.status_code, 400)
+
+    async def test_missing_optional_runtime_is_rejected_before_adapter_creation(self):
+        request = Request({'type': 'http', 'method': 'POST', 'path': '/api/chat/completions',
+                           'headers': [(b'authorization', b'Bearer test')]})
+        model = {'execution': {'framework_id': 'claude-code', 'model_id': 'configured-model'}}
+        with (
+            patch.dict(sys.modules, {'open_webui.models.config': SimpleNamespace(Config=SimpleNamespace())}),
+            patch.object(bridge, 'settings', AsyncMock(return_value={'frameworks': {}})),
+            patch.object(bridge, 'runtime_path', return_value=None),
+            patch.object(bridge, 'ClaudeAdapter') as adapter,
+        ):
+            with self.assertRaises(HTTPException) as caught:
+                await bridge.generate_chat(request, {'messages': []}, SimpleNamespace(id='owner', role='admin'), model)
+            self.assertEqual(caught.exception.status_code, 400)
+            self.assertIn('runtime is unavailable', caught.exception.detail)
+            adapter.assert_not_called()
 
     async def test_stale_catalog_cannot_call_disabled_hermes_connection(self):
         values = {
