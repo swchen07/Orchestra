@@ -1,0 +1,320 @@
+{
+  "version": "1.0",
+  "actions": [
+    {
+      "id": "workflow.receive",
+      "operation": "input",
+      "label": "Receive input",
+      "category": "Data",
+      "executor": "host",
+      "summary": "Map public module input and authorized caller invocation fields into named ports.",
+      "when_to_use": "Use once at the start of a workflow.",
+      "input_contract": "Public input, explicitly selected host invocation fields or fixed values.",
+      "output_contract": "Named input fields.",
+      "control_effect": "Publishes data; does not call an Agent.",
+      "context_rule": "No private Agent context.",
+      "output_meanings": {
+        "task": "The user\u2019s current request together with the visible chat context."
+      },
+      "feedback_policy": null
+    },
+    {
+      "id": "module.call",
+      "operation": "call",
+      "label": "Delegate a task",
+      "category": "Agent interaction",
+      "executor": "agent",
+      "summary": "Give a bounded task to a module and receive its report.",
+      "when_to_use": "Use for research, writing, calculations or other work done by an Agent Team.",
+      "input_contract": "Selected source fields and this instance\u2019s own history.",
+      "output_contract": "A report or the structured fields you define.",
+      "control_effect": "Downstream nodes wait for the declared result; independent branches continue.",
+      "context_rule": "Uses only this module\u2019s private context; does not transfer the conversation.",
+      "output_meanings": {
+        "report": "The complete result of this assigned task, with relevant evidence, calculations and uncertainty."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "tasks.dispatch",
+      "operation": "dispatch",
+      "label": "Dispatch assignments",
+      "category": "Agent interaction",
+      "executor": "agent",
+      "summary": "Write assignments and select which declared execution branches should run.",
+      "when_to_use": "Use for a fixed graph with selective task distribution and review-driven rework.",
+      "input_contract": "Goal, declared branch targets, own history and any rejected review feedback.",
+      "output_contract": "Declared assignment fields plus selected_nodes containing the target node IDs to execute.",
+      "control_effect": "The host validates selected branches. During rework it reuses unselected reports, reruns selected branches and reopens their dependants.",
+      "context_rule": "The dispatcher and each executor retain their own private contexts.",
+      "output_meanings": {
+        "selected_nodes": "Exact node IDs selected from this dispatcher\u2019s declared targets. On rework choose only branches needing correction."
+      },
+      "feedback_policy": "select"
+    },
+    {
+      "id": "graph.plan",
+      "operation": "plan",
+      "label": "Generate or revise a plan",
+      "category": "Agent interaction",
+      "executor": "agent",
+      "summary": "Ask the Controller for a validated work graph or graph changes.",
+      "when_to_use": "Use when the work steps should adapt to the request and incoming reports.",
+      "input_contract": "Goal, available modules, graph state and selected reports.",
+      "output_contract": "A typed graph action, checked by the host.",
+      "control_effect": "May add or change unstarted work; cannot bypass protected review or boundary nodes.",
+      "context_rule": "Controller keeps its own private context.",
+      "output_meanings": {
+        "action": "A registered controller command describing graph creation, graph changes, waiting or requesting input. The host validates and executes this command."
+      },
+      "feedback_policy": "replan"
+    },
+    {
+      "id": "result.review",
+      "operation": "review",
+      "label": "Review a result",
+      "category": "Agent interaction",
+      "executor": "agent",
+      "summary": "Independently check evidence and produce an approval or concrete corrections.",
+      "when_to_use": "Use before delivery when an independent result check is required.",
+      "input_contract": "Original goal, candidate and referenced reports.",
+      "output_contract": "Verdict, checked reports, issues and approved answer.",
+      "control_effect": "Approval releases the answer; rejection follows the configured correction rule.",
+      "context_rule": "Reviewer has a separate private context.",
+      "output_meanings": {
+        "verdict": "approve when the requested result is supported; otherwise revise.",
+        "summary": "A concise account of what was independently checked.",
+        "issues": "Concrete unresolved errors or missing evidence; empty on approval.",
+        "checked_report_refs": "The exact host-issued report IDs actually checked. Never invent IDs.",
+        "answer": "The final user-facing answer on approval, in the requested format; empty when requesting corrections."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "flow.route",
+      "operation": "route",
+      "label": "Choose a branch",
+      "category": "Control",
+      "executor": "agent",
+      "summary": "Ask a module to select one declared branch.",
+      "when_to_use": "Use when different outcomes need different next steps.",
+      "input_contract": "The facts needed to choose.",
+      "output_contract": "A declared case and an optional report.",
+      "control_effect": "Only edges for the selected case proceed.",
+      "context_rule": "Uses the bound module\u2019s private context.",
+      "output_meanings": {
+        "case": "The declared branch name selected from this node\u2019s cases.",
+        "report": "The rationale for selecting this branch."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "items.map",
+      "operation": "map",
+      "label": "Dispatch items",
+      "category": "Agent interaction",
+      "executor": "agent",
+      "summary": "Run the same assignment for each item with separate execution contexts.",
+      "when_to_use": "Use to divide a document list or batch into independently processed items.",
+      "input_contract": "An item list plus shared selected inputs.",
+      "output_contract": "Item results, partial status and combined report.",
+      "control_effect": "Dispatches items under the shared call and concurrency limits.",
+      "context_rule": "Each item has a stable context separate from other items.",
+      "output_meanings": {
+        "items": "One outcome for each dispatched item, retaining its position and status.",
+        "partial": "Whether any item failed.",
+        "report": "The combined item results."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "results.collect",
+      "operation": "join",
+      "label": "Collect reports",
+      "category": "Control",
+      "executor": "host",
+      "summary": "Collect reports without asking another model to rewrite or judge them.",
+      "when_to_use": "Use to gather independent answers or wait for the required result set.",
+      "input_contract": "References to the reports being collected.",
+      "output_contract": "Combined report, named results and outcome states.",
+      "control_effect": "Waits for all outcomes, all successes, first success or a configured quorum.",
+      "context_rule": "No Agent context is created or shared.",
+      "output_meanings": {
+        "report": "The collected replies kept separate and attributed to their input names.",
+        "results": "The original values grouped by this collector\u2019s local input names.",
+        "outcomes": "The terminal execution state of each upstream node."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "task.repeat",
+      "operation": "loop",
+      "label": "Repeat with feedback",
+      "category": "Control",
+      "executor": "agent",
+      "summary": "Repeat a module assignment until its stop condition or iteration limit is reached.",
+      "when_to_use": "Use for a bounded refinement loop.",
+      "input_contract": "Selected inputs and the previous iteration\u2019s result.",
+      "output_contract": "Last result, iteration count, stop reason and report.",
+      "control_effect": "Repeats within the iteration and shared budgets.",
+      "context_rule": "Reuses this loop\u2019s private module context.",
+      "output_meanings": {
+        "last": "The final iteration\u2019s result.",
+        "iterations": "How many iterations actually ran.",
+        "stop_reason": "Whether the stop condition or the iteration limit ended repetition.",
+        "report": "The report from the last iteration."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "human.ask",
+      "operation": "checkpoint",
+      "label": "Ask the user",
+      "category": "Human interaction",
+      "executor": "human",
+      "summary": "Pause this node until the user supplies a value.",
+      "when_to_use": "Use when execution needs a human answer rather than an Agent guess.",
+      "input_contract": "An explicit question and any selected context.",
+      "output_contract": "The user\u2019s answer and a report.",
+      "control_effect": "This branch waits; independent ready branches may continue.",
+      "context_rule": "Does not call an Agent or copy private histories.",
+      "output_meanings": {
+        "answer": "The value supplied by the user to this question.",
+        "report": "The user\u2019s answer represented as text."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "data.return",
+      "operation": "finish",
+      "label": "Return supplied data",
+      "category": "Data",
+      "executor": "host",
+      "summary": "Return a value already available from inputs.",
+      "when_to_use": "Use to expose an existing result without an extra model call.",
+      "input_contract": "An answer, report or other selected values.",
+      "output_contract": "A report containing the supplied value.",
+      "control_effect": "Publishes the value when its dependencies are ready.",
+      "context_rule": "No Agent context.",
+      "output_meanings": {
+        "report": "An existing supplied value exposed as this node\u2019s result, without another model call."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "workflow.deliver",
+      "operation": "output",
+      "label": "Expose public outputs",
+      "category": "Data",
+      "executor": "host",
+      "summary": "Map upstream values into the Workflow public output ports.",
+      "when_to_use": "Use once at the end of a workflow.",
+      "input_contract": "Selected upstream public result fields.",
+      "output_contract": "Named public output object; root chat chooses a delivery port.",
+      "control_effect": "Delivery still respects graph dependencies and protected review gates.",
+      "context_rule": "Does not invoke an Agent.",
+      "output_meanings": {
+        "answer": "The final answer selected from upstream results and delivered to the chat."
+      },
+      "feedback_policy": null
+    },
+    {
+      "id": "workflow.call",
+      "operation": "workflow",
+      "label": "Call a Workflow (legacy alias)",
+      "category": "Modules",
+      "executor": "host",
+      "summary": "Legacy alias for module.call with an authorized saved Workflow binding.",
+      "when_to_use": "Existing definitions remain supported. New compositions use the common module.call Action.",
+      "input_contract": "The child Workflow public input object.",
+      "output_contract": "The child Workflow public output fields and attributed report.",
+      "control_effect": "Run a child graph with shared root budgets, deadline and slots.",
+      "context_rule": "A stable invocation path retains child role contexts across turns; separate paths are isolated.",
+      "output_meanings": {
+        "answer": "The child Workflow answer.",
+        "report": "The child public outputs serialized as text."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "workspace.command",
+      "operation": "command",
+      "label": "Run workspace commands",
+      "category": "Code and artifacts",
+      "executor": "host",
+      "summary": "Run administrator-approved named commands in an owned workspace.",
+      "when_to_use": "Run administrator-approved named commands in an owned workspace.",
+      "input_contract": "Declared immutable artifact references and Project-approved command IDs.",
+      "output_contract": "Host-owned revision, artifact, command/test or conflict receipts.",
+      "control_effect": "Runs inside the common dependency, cancellation and feedback scheduler.",
+      "context_rule": "Host-owned lease selected by a declared logical instance; no model-supplied paths.",
+      "output_meanings": {
+        "report": "The actual host outcome and evidence.",
+        "__workspace": "Owned workspace revision and actual guarantees.",
+        "__artifacts": "Immutable published artifact receipts.",
+        "status": "Actual host result status."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "artifact.evaluate",
+      "operation": "evaluate",
+      "label": "Evaluate candidates",
+      "category": "Code and artifacts",
+      "executor": "host",
+      "summary": "Test immutable candidate revisions in separate scratch environments against pinned authoritative checks.",
+      "when_to_use": "Test immutable candidate revisions in separate scratch environments against pinned authoritative checks.",
+      "input_contract": "Declared immutable artifact references and Project-approved command IDs.",
+      "output_contract": "Host-owned revision, artifact, command/test or conflict receipts.",
+      "control_effect": "Runs inside the common dependency, cancellation and feedback scheduler.",
+      "context_rule": "Host-owned lease selected by a declared logical instance; no model-supplied paths.",
+      "output_meanings": {
+        "report": "The actual host outcome and evidence.",
+        "__workspace": "Owned workspace revision and actual guarantees.",
+        "__artifacts": "Immutable published artifact receipts.",
+        "status": "Actual host result status."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "artifact.integrate",
+      "operation": "integrate",
+      "label": "Integrate selected changes",
+      "category": "Code and artifacts",
+      "executor": "host",
+      "summary": "Select one alternative or Git-merge explicitly selected immutable artifacts in a separate integration workspace.",
+      "when_to_use": "Select one alternative or Git-merge explicitly selected immutable artifacts in a separate integration workspace.",
+      "input_contract": "Declared immutable artifact references and Project-approved command IDs.",
+      "output_contract": "Host-owned revision, artifact, command/test or conflict receipts.",
+      "control_effect": "Runs inside the common dependency, cancellation and feedback scheduler.",
+      "context_rule": "Host-owned lease selected by a declared logical instance; no model-supplied paths.",
+      "output_meanings": {
+        "report": "The actual host outcome and evidence.",
+        "__workspace": "Owned workspace revision and actual guarantees.",
+        "__artifacts": "Immutable published artifact receipts.",
+        "status": "Actual host result status."
+      },
+      "feedback_policy": "replay"
+    },
+    {
+      "id": "workspace.publish",
+      "operation": "publish",
+      "label": "Publish a revision",
+      "category": "Code and artifacts",
+      "executor": "host",
+      "summary": "Publish the owned current workspace after resolving real file conflicts.",
+      "when_to_use": "Publish the owned current workspace after resolving real file conflicts.",
+      "input_contract": "Declared immutable artifact references and Project-approved command IDs.",
+      "output_contract": "Host-owned revision, artifact, command/test or conflict receipts.",
+      "control_effect": "Runs inside the common dependency, cancellation and feedback scheduler.",
+      "context_rule": "Host-owned lease selected by a declared logical instance; no model-supplied paths.",
+      "output_meanings": {
+        "report": "The actual host outcome and evidence.",
+        "__workspace": "Owned workspace revision and actual guarantees.",
+        "__artifacts": "Immutable published artifact receipts.",
+        "status": "Actual host result status."
+      },
+      "feedback_policy": "replay"
+    }
+  ]
+}

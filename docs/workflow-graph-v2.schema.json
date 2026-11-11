@@ -1,0 +1,494 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:open-webui:workflow-graph:2.0",
+  "title": "Composable workflow graph 2.0",
+  "description": "Data references compile dependency edges. The executor advances ready nodes independently. Controller revisions can modify unstarted nodes. Bindings resolve only against the Project module catalog.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "2.0"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 80,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "op": {
+            "enum": [
+              "input",
+              "call",
+              "dispatch",
+              "plan",
+              "review",
+              "route",
+              "map",
+              "join",
+              "loop",
+              "checkpoint",
+              "finish",
+              "output",
+              "workflow"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "binding": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "instruction": {
+            "type": "string",
+            "maxLength": 16000
+          },
+          "inputs": {
+            "type": "object",
+            "maxProperties": 40,
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "enum": [
+                    "input",
+                    "node",
+                    "report",
+                    "literal",
+                    "output",
+                    "invocation"
+                  ]
+                },
+                "pointer": {
+                  "type": "string"
+                },
+                "node": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+                },
+                "report_ref": {
+                  "type": "string"
+                },
+                "optional": {
+                  "type": "boolean"
+                },
+                "value": {},
+                "port": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+                }
+              },
+              "required": [
+                "source"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "context_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          },
+          "output_schema": {
+            "type": [
+              "boolean",
+              "object"
+            ]
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+            },
+            "minItems": 2,
+            "maxItems": 12,
+            "uniqueItems": true
+          },
+          "policy": {
+            "enum": [
+              "all_terminal",
+              "all_success",
+              "first_success",
+              "quorum"
+            ]
+          },
+          "quorum": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "enum": [
+                  "input",
+                  "node",
+                  "report",
+                  "literal",
+                  "output",
+                  "invocation"
+                ]
+              },
+              "pointer": {
+                "type": "string"
+              },
+              "node": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+              },
+              "report_ref": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "value": {},
+              "port": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+              }
+            },
+            "required": [
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "max_iterations": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "stop_when": {
+            "type": "object",
+            "properties": {
+              "pointer": {
+                "type": "string"
+              },
+              "equals": {}
+            },
+            "required": [
+              "pointer",
+              "equals"
+            ],
+            "additionalProperties": false
+          },
+          "question": {
+            "type": "string",
+            "maxLength": 8000
+          },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
+          },
+          "action": {
+            "enum": [
+              "workflow.receive",
+              "module.call",
+              "tasks.dispatch",
+              "graph.plan",
+              "result.review",
+              "flow.route",
+              "items.map",
+              "results.collect",
+              "task.repeat",
+              "human.ask",
+              "data.return",
+              "workflow.deliver",
+              "workflow.call"
+            ]
+          },
+          "report_description": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "planning": {
+            "type": "object",
+            "properties": {
+              "initial": {
+                "type": "boolean"
+              },
+              "on_events": {
+                "type": "boolean"
+              },
+              "catalog_scope": {
+                "enum": [
+                  "project",
+                  "roles"
+                ]
+              },
+              "output_port": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+              },
+              "observe_nodes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+                },
+                "maxItems": 80,
+                "uniqueItems": true
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "review": {
+            "type": "object",
+            "properties": {
+              "max_repairs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 8
+              },
+              "repair_node": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "dispatch": {
+            "type": "object",
+            "properties": {
+              "targets": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+                },
+                "minItems": 1,
+                "maxItems": 24,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "targets"
+            ],
+            "additionalProperties": false
+          },
+          "input_schema": {
+            "type": [
+              "boolean",
+              "object"
+            ]
+          },
+          "input_schema_inferred": {
+            "type": "boolean"
+          },
+          "environment": {
+            "type": "object",
+            "properties": {
+              "filesystem": {
+                "enum": [
+                  "inherit",
+                  "none",
+                  "read-only"
+                ]
+              },
+              "tools": {
+                "enum": [
+                  "inherit",
+                  "none"
+                ]
+              },
+              "network": {
+                "enum": [
+                  "inherit",
+                  "provider-only"
+                ]
+              },
+              "isolation": {
+                "enum": [
+                  "logical",
+                  "process",
+                  "sandbox"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "op"
+            ]
+          },
+          {
+            "required": [
+              "action"
+            ]
+          }
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 320,
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          },
+          "on": {
+            "enum": [
+              "success",
+              "terminal",
+              "case",
+              "revise"
+            ]
+          },
+          "case": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          },
+          "generated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "result_node": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+    },
+    "input_policy": {
+      "enum": [
+        "shared",
+        "scoped"
+      ]
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_calls": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 24
+        },
+        "max_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "max_concurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "max_replans": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "outputs": {
+      "type": "object",
+      "maxProperties": 20,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "input",
+              "node",
+              "report",
+              "literal",
+              "output",
+              "invocation"
+            ]
+          },
+          "pointer": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          },
+          "report_ref": {
+            "type": "string"
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "value": {},
+          "port": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "delivery_port": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$"
+    },
+    "input_schema": {
+      "type": [
+        "boolean",
+        "object"
+      ]
+    },
+    "output_schema": {
+      "type": [
+        "boolean",
+        "object"
+      ]
+    },
+    "output_schema_inferred": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "nodes",
+    "outputs"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,35 @@
+{
+  "package": "cc-switch-data-hooks",
+  "adapter_version": "0.1.0",
+  "upstream": {
+    "repository": "https://github.com/farion1231/cc-switch",
+    "version": "4.0.21",
+    "commit": "c4db63c60d2a1ddcb4bd9f81152b9c6126413659",
+    "schema_version": 23
+  },
+  "vendor_blobs": {
+    "database-schema.rs": "e10c146c33a06324a1283f0fc33d3df3e7259b8a",
+    "session-model.rs": "3eb8a19f3a94ad2e764ae1b337755aa7f27f20aa",
+    "session-provider-module.rs": "ac36fc63fbe8564bcfa1340d28143fcfafafff56",
+    "LICENSE": "d84c4f73112a9019312a332c1d04218ab1c03be7",
+    "database-module.rs": "959cd5eba2ae21e12f219ad13c9f48096972cd49",
+    "usage-rollup.rs": "1ca576c5d5c7caf2b259bfc95d720971054f60cc",
+    "claude-sessions.rs": "1df0840cb56fce5446a52dc53a7fcd8315879429",
+    "codex-sessions.rs": "5c81149545304a226ed243217894dad5602c55d7",
+    "usage-statistics.rs": "d8dba3c01db7ee96127b55237a2708acdc314984",
+    "sql-helpers.rs": "049db1c52158f71df95128a03022fc9b59c74b5e"
+  },
+  "hooks": [
+    "catalog.read",
+    "project.bind",
+    "session.list",
+    "session.read",
+    "usage.read",
+    "turn.prepare",
+    "turn.observed"
+  ],
+  "mode": "read-only-source-with-project-overlays",
+  "derived_sha256": {
+    "effective-usage-filter.sql": "1b02e029c858ba41c392b6bfb2cb2f91431b27c2459206808fa52cdfa0903605"
+  }
+}

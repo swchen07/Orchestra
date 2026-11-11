@@ -1,0 +1,806 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:open-webui:workflow-graph:0.1",
+  "title": "Workflow PlanSpec v0.1 — design draft, not an implemented API",
+  "description": "Structural contract only. References, readiness, scopes, capabilities, budgets and runtime mutations require semantic validation.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalog_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_schema": {
+      "type": [
+        "object",
+        "boolean"
+      ]
+    },
+    "bindings": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "module_ref": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "module_ref"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      },
+      "minItems": 1
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      },
+      "minItems": 0
+    },
+    "message_routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "question",
+                "report",
+                "notice"
+              ]
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "kinds"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "result_node": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_calls": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_concurrency": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_replans": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "max_calls",
+        "max_seconds",
+        "max_concurrency",
+        "max_replans"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "revision",
+    "title",
+    "goal",
+    "catalog_revision",
+    "input_schema",
+    "bindings",
+    "nodes",
+    "edges",
+    "message_routes",
+    "result_node",
+    "limits"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "value_ref": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "const": "input"
+            },
+            "pointer": {
+              "type": "string",
+              "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+            }
+          },
+          "required": [
+            "source",
+            "pointer"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "const": "node"
+            },
+            "node": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "pointer": {
+              "type": "string",
+              "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+            },
+            "optional": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "source",
+            "node",
+            "pointer"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "const": "report"
+            },
+            "report_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pointer": {
+              "type": "string",
+              "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+            }
+          },
+          "required": [
+            "source",
+            "report_ref",
+            "pointer"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "const": "literal"
+            },
+            "value": {}
+          },
+          "required": [
+            "source",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "enum": [
+            "chat_node",
+            "invocation",
+            "item"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "on_binding_change": {
+          "const": "new_generation"
+        }
+      },
+      "required": [
+        "scope",
+        "on_binding_change"
+      ],
+      "additionalProperties": false
+    },
+    "node": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "const": "call"
+            },
+            "inputs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/value_ref"
+              }
+            },
+            "output_schema": {
+              "type": [
+                "object",
+                "boolean"
+              ]
+            },
+            "state": {
+              "$ref": "#/$defs/state"
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "op",
+            "inputs",
+            "output_schema",
+            "binding",
+            "instruction",
+            "state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "const": "route"
+            },
+            "inputs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/value_ref"
+              }
+            },
+            "output_schema": {
+              "type": [
+                "object",
+                "boolean"
+              ]
+            },
+            "state": {
+              "$ref": "#/$defs/state"
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cases": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "minItems": 2,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "op",
+            "inputs",
+            "output_schema",
+            "binding",
+            "instruction",
+            "state",
+            "cases"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "const": "map"
+            },
+            "inputs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/value_ref"
+              }
+            },
+            "output_schema": {
+              "type": [
+                "object",
+                "boolean"
+              ]
+            },
+            "state": {
+              "$ref": "#/$defs/state"
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1
+            },
+            "items": {
+              "$ref": "#/$defs/value_ref"
+            },
+            "item_key_pointer": {
+              "type": "string",
+              "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "op",
+            "inputs",
+            "output_schema",
+            "binding",
+            "instruction",
+            "state",
+            "items"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "const": "join"
+            },
+            "inputs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/value_ref"
+              }
+            },
+            "output_schema": {
+              "type": [
+                "object",
+                "boolean"
+              ]
+            },
+            "state": {
+              "$ref": "#/$defs/state"
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "policy": {
+              "enum": [
+                "all_success",
+                "all_terminal",
+                "quorum"
+              ]
+            },
+            "quorum": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "op",
+            "inputs",
+            "output_schema",
+            "policy"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "policy": {
+                    "const": "quorum"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "quorum"
+                ]
+              },
+              "else": {
+                "not": {
+                  "required": [
+                    "quorum"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "const": "loop"
+            },
+            "inputs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/value_ref"
+              }
+            },
+            "output_schema": {
+              "type": [
+                "object",
+                "boolean"
+              ]
+            },
+            "state": {
+              "$ref": "#/$defs/state"
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "binding": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "instruction": {
+              "type": "string",
+              "minLength": 1
+            },
+            "max_iterations": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "stop_when": {
+              "type": "object",
+              "properties": {
+                "pointer": {
+                  "type": "string",
+                  "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+                },
+                "equals": {}
+              },
+              "required": [
+                "pointer",
+                "equals"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "op",
+            "inputs",
+            "output_schema",
+            "binding",
+            "instruction",
+            "state",
+            "max_iterations",
+            "stop_when"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "const": "checkpoint"
+            },
+            "inputs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/value_ref"
+              }
+            },
+            "output_schema": {
+              "type": [
+                "object",
+                "boolean"
+              ]
+            },
+            "state": {
+              "$ref": "#/$defs/state"
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            },
+            "question": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "op",
+            "inputs",
+            "output_schema",
+            "question"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "const": "finish"
+            },
+            "inputs": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/value_ref"
+              }
+            },
+            "output_schema": {
+              "type": [
+                "object",
+                "boolean"
+              ]
+            },
+            "state": {
+              "$ref": "#/$defs/state"
+            },
+            "acceptance": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "op",
+            "inputs",
+            "output_schema"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "from": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "to": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "on": {
+          "enum": [
+            "success",
+            "terminal",
+            "case"
+          ]
+        },
+        "case": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to",
+        "on"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "on": {
+                "const": "case"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "case"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "case"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
